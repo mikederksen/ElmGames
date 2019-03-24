@@ -1,0 +1,24 @@
+{
+    "name": "elmgames",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "watch": "elm-live -p 3002 --start-page=web/application.html src/Main.elm -- --output=web/main.js",
+        "build": "elm make src/Main.elm --output=web/main.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/mikederksen/ElmGames.git"
+    },
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/mikederksen/ElmGames/issues"
+    },
+    "homepage": "https://github.com/mikederksen/ElmGames#readme",
+    "devDependencies": {
+        "elm": "^0.19.0-bugfix6",
+        "elm-live": "^3.4.0"
+    }
+}
