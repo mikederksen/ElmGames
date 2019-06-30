@@ -1,8 +1,8 @@
-module Games.Snake exposing (..)
+module Games.Snake exposing (Model, Msg, initialState, view, update, subscriptions)
 
-import Array exposing (Array)
-import Html exposing (Html, div, text)
-import Html.Attributes exposing (class)
+import Html exposing (Html, div, text, input, label)
+import Html.Attributes exposing (class, value, type_, min, max, step, name, checked)
+import Html.Events exposing (onInput)
 import Time
 import Browser.Events exposing (onKeyDown)
 import Json.Decode as Decode
@@ -29,11 +29,20 @@ type alias Snake =
     List Position
 
 
+type alias Options =
+    { intervalFraction : Float
+    , wallsKillSnake : Bool
+    }
+
+
 type alias Model =
     { time : Time.Posix
     , snake : Snake
     , candyPosition : Position
     , direction : Direction
+    , nextDirection : Maybe Direction
+    , speed : Float
+    , options : Options
     }
 
 
@@ -41,6 +50,8 @@ type Msg
     = Tick
     | KeyPressed (Maybe Direction)
     | RandomPosition Position
+    | IntervalFractionChanged String
+    | WallsKillSnakeChanged Bool
 
 
 size : (Int, Int)
@@ -50,11 +61,14 @@ size =
 
 initialState : Model
 initialState =
-    Model
-        (Time.millisToPosix 0)
-        [ ( 0, 0 ), ( 1, 0 ), ( 2, 0 ), ( 3, 0 ) ]
-        ( 6, 4 )
-        Right
+    { time = (Time.millisToPosix 0)
+    , snake = [ ( 0, 0 ), ( 1, 0 ), ( 2, 0 ), ( 3, 0 ) ]
+    , candyPosition = ( 6, 4 )
+    , direction = Right
+    , nextDirection = Nothing
+    , speed = 400
+    , options = Options 0.95 False
+    }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -67,10 +81,8 @@ update msg model =
                         |> Maybe.withDefault (0,0)
                         |> updatePosition model.direction
 
-
                 isEatingCandy =
                     newHead == model.candyPosition
-
 
                 newSnakeTail =
                     if isEatingCandy 
@@ -84,7 +96,10 @@ update msg model =
                     newHead :: newSnakeTail
 
             in
-                ( { model | snake = newSnake }
+                ( { model 
+                  | snake = newSnake
+                  , speed = if isEatingCandy then model.speed * model.options.intervalFraction else model.speed
+                  }
                 , if isEatingCandy then generateRandomPositionCmd else Cmd.none
                 )
 
@@ -96,22 +111,57 @@ update msg model =
             , Cmd.none
             )
 
+
         RandomPosition position ->
             if List.member position model.snake
             then ( model, generateRandomPositionCmd)
             else ( { model | candyPosition = position }, Cmd.none )
 
 
+        IntervalFractionChanged newFractionString ->
+            let
+                updateFraction options newFraction =
+                    { options | intervalFraction = newFraction }
+
+                newOptions = 
+                    String.toFloat newFractionString
+                        |> Maybe.map (updateFraction model.options)
+                        |> Maybe.withDefault model.options
+            in
+            
+            ( { model | options = newOptions }
+            , Cmd.none
+            )
+
+        WallsKillSnakeChanged newWallsKillSnake ->
+            let
+                options =
+                    model.options
+
+                newOptions =
+                    { options | wallsKillSnake = newWallsKillSnake }
+            in
+                ( { model | options = newOptions }
+                , Cmd.none
+                )
+
+
 generateRandomPositionCmd : Cmd Msg
 generateRandomPositionCmd =
-    Random.generate RandomPosition randomPositionGenerator
+    Random.pair (randomBelow (Tuple.first size)) (randomBelow (Tuple.second size))
+        |> Random.generate RandomPosition
+
+
+randomBelow : Int -> Random.Generator Int
+randomBelow belowValue =
+    Random.int 0 (belowValue - 1)
 
 
 randomPositionGenerator : Random.Generator (Int, Int)
 randomPositionGenerator =
     Random.pair
-        (Random.int 0 (Tuple.first size - 1))
-        (Random.int 0 (Tuple.second size - 1))
+        (Random.int 0 ((Tuple.first size) - 1))
+        (Random.int 0 ((Tuple.second size) - 1))
 
 
 updatePosition : Direction -> Position -> Position
@@ -126,11 +176,17 @@ updatePosition direction position =
 view : Model -> Html Msg
 view model =
     div [] 
-        [ Grid.initialize size Empty
-            |> updateBoardWithSnake model.snake
-            |> Grid.updatePosition model.candyPosition Candy
-            |> Grid.viewBoard viewSquare
+        [ viewSnake model
+        , viewOptionsPane model.options
         ]
+
+
+viewSnake : Model -> Html Msg
+viewSnake model =
+    Grid.initialize size Empty
+        |> updateBoardWithSnake model.snake
+        |> Grid.updatePosition model.candyPosition Candy
+        |> Grid.viewBoard viewSquare
 
 
 updateBoardWithSnake : Snake -> Board Square -> Board Square
@@ -157,10 +213,34 @@ viewSquare square =
         div [ class ("square " ++ squareClass) ] []
 
 
+viewOptionsPane : Options -> Html Msg
+viewOptionsPane options =
+    div []
+        [ input 
+            [ type_ "number"
+            , min "0.01"
+            , max "0.99"
+            , step "0.01"
+            , value (options.intervalFraction |> String.fromFloat)
+            , onInput IntervalFractionChanged
+            ] 
+            []
+        , radio model.options.wallsKillSnakee
+        ]
+
+radio : String -> Bool -> msg -> Html msg
+radio value isChecked msg =
+    label
+        [ ]
+        [ input [ type_ "radio", name "walls", onInput (\_ -> msg), checked isChecked ] []
+        , text value
+        ]
+
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ Time.every 400 (\_ -> Tick)
+        [ Time.every model.speed (\_ -> Tick)
         , onKeyDown (Decode.map keyPressed (Decode.field "key" Decode.string))
         ]
 

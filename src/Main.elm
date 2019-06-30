@@ -6,7 +6,6 @@ import Browser exposing (UrlRequest(..))
 import Url exposing (Url)
 import Html exposing (Html, nav, div, button, text, h1, ul, li, a, b, br)
 import Browser exposing (Document)
-import Html.Events exposing (onClick)
 import Html.Attributes exposing (href, class, id)
 import Games.Snake as Snake
 

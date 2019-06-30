@@ -35,8 +35,15 @@ updatePosition position newSquare board =
 updateRow : Position -> square -> Int -> Row square -> Row square
 updateRow (rowPos, squarePos) newSquare rowIndex row =
     if rowPos == rowIndex 
-    then (row |> Array.indexedMap (\squareIndex oldSquare -> if squareIndex == squarePos then newSquare else oldSquare))
+    then Array.indexedMap (mapUpdateRow squarePos newSquare) row
     else row
+
+
+mapUpdateRow : Int -> square -> Int -> square -> square
+mapUpdateRow squarePos newSquare squareIndex oldSquare =
+    if squareIndex == squarePos 
+    then newSquare
+    else oldSquare
 
 
 viewBoard : (square -> Html msg) -> Board square -> Html msg

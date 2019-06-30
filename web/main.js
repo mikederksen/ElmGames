@@ -4399,11 +4399,13 @@ var author$project$Main$LinkClicked = function (a) {
 var author$project$Main$UrlChanged = function (a) {
 	return {$: 'UrlChanged', a: a};
 };
-var author$project$Games$Snake$Model = F4(
-	function (time, snake, candyPosition, direction) {
-		return {candyPosition: candyPosition, direction: direction, snake: snake, time: time};
+var author$project$Games$Snake$Options = F2(
+	function (intervalFraction, wallsKillSnake) {
+		return {intervalFraction: intervalFraction, wallsKillSnake: wallsKillSnake};
 	});
 var author$project$Games$Snake$Right = {$: 'Right'};
+var elm$core$Basics$False = {$: 'False'};
+var elm$core$Maybe$Nothing = {$: 'Nothing'};
 var elm$core$Basics$EQ = {$: 'EQ'};
 var elm$core$Basics$LT = {$: 'LT'};
 var elm$core$Elm$JsArray$foldr = _JsArray_foldr;
@@ -4491,23 +4493,25 @@ var elm$time$Time$Posix = function (a) {
 	return {$: 'Posix', a: a};
 };
 var elm$time$Time$millisToPosix = elm$time$Time$Posix;
-var author$project$Games$Snake$initialState = A4(
-	author$project$Games$Snake$Model,
-	elm$time$Time$millisToPosix(0),
-	_List_fromArray(
+var author$project$Games$Snake$initialState = {
+	candyPosition: _Utils_Tuple2(6, 4),
+	direction: author$project$Games$Snake$Right,
+	nextDirection: elm$core$Maybe$Nothing,
+	options: A2(author$project$Games$Snake$Options, 0.95, false),
+	snake: _List_fromArray(
 		[
 			_Utils_Tuple2(0, 0),
 			_Utils_Tuple2(1, 0),
 			_Utils_Tuple2(2, 0),
 			_Utils_Tuple2(3, 0)
 		]),
-	_Utils_Tuple2(6, 4),
-	author$project$Games$Snake$Right);
+	speed: 400,
+	time: elm$time$Time$millisToPosix(0)
+};
 var author$project$Main$Model = F4(
 	function (nummer, url, key, snakeModel) {
 		return {key: key, nummer: nummer, snakeModel: snakeModel, url: url};
 	});
-var elm$core$Basics$False = {$: 'False'};
 var elm$core$Basics$True = {$: 'True'};
 var elm$core$Result$isOk = function (result) {
 	if (result.$ === 'Ok') {
@@ -4690,7 +4694,6 @@ var elm$core$Array$initialize = F2(
 var elm$core$Maybe$Just = function (a) {
 	return {$: 'Just', a: a};
 };
-var elm$core$Maybe$Nothing = {$: 'Nothing'};
 var elm$core$Result$Err = function (a) {
 	return {$: 'Err', a: a};
 };
@@ -5856,7 +5859,7 @@ var author$project$Games$Snake$subscriptions = function (model) {
 			[
 				A2(
 				elm$time$Time$every,
-				400,
+				model.speed,
 				function (_n0) {
 					return author$project$Games$Snake$Tick;
 				}),
@@ -5883,11 +5886,6 @@ var author$project$Main$subscriptions = function (model) {
 };
 var author$project$Games$Snake$RandomPosition = function (a) {
 	return {$: 'RandomPosition', a: a};
-};
-var author$project$Games$Snake$size = _Utils_Tuple2(10, 10);
-var elm$core$Tuple$second = function (_n0) {
-	var y = _n0.b;
-	return y;
 };
 var elm$core$Basics$negate = function (n) {
 	return -n;
@@ -5944,38 +5942,14 @@ var elm$random$Random$int = F2(
 				}
 			});
 	});
-var elm$random$Random$map2 = F3(
-	function (func, _n0, _n1) {
-		var genA = _n0.a;
-		var genB = _n1.a;
-		return elm$random$Random$Generator(
-			function (seed0) {
-				var _n2 = genA(seed0);
-				var a = _n2.a;
-				var seed1 = _n2.b;
-				var _n3 = genB(seed1);
-				var b = _n3.a;
-				var seed2 = _n3.b;
-				return _Utils_Tuple2(
-					A2(func, a, b),
-					seed2);
-			});
-	});
-var elm$random$Random$pair = F2(
-	function (genA, genB) {
-		return A3(
-			elm$random$Random$map2,
-			F2(
-				function (a, b) {
-					return _Utils_Tuple2(a, b);
-				}),
-			genA,
-			genB);
-	});
-var author$project$Games$Snake$randomPositionGenerator = A2(
-	elm$random$Random$pair,
-	A2(elm$random$Random$int, 0, author$project$Games$Snake$size.a - 1),
-	A2(elm$random$Random$int, 0, author$project$Games$Snake$size.b - 1));
+var author$project$Games$Snake$randomBelow = function (belowValue) {
+	return A2(elm$random$Random$int, 0, belowValue - 1);
+};
+var author$project$Games$Snake$size = _Utils_Tuple2(10, 10);
+var elm$core$Tuple$second = function (_n0) {
+	var y = _n0.b;
+	return y;
+};
 var elm$random$Random$Generate = function (a) {
 	return {$: 'Generate', a: a};
 };
@@ -6054,7 +6028,41 @@ var elm$random$Random$generate = F2(
 			elm$random$Random$Generate(
 				A2(elm$random$Random$map, tagger, generator)));
 	});
-var author$project$Games$Snake$generateRandomPositionCmd = A2(elm$random$Random$generate, author$project$Games$Snake$RandomPosition, author$project$Games$Snake$randomPositionGenerator);
+var elm$random$Random$map2 = F3(
+	function (func, _n0, _n1) {
+		var genA = _n0.a;
+		var genB = _n1.a;
+		return elm$random$Random$Generator(
+			function (seed0) {
+				var _n2 = genA(seed0);
+				var a = _n2.a;
+				var seed1 = _n2.b;
+				var _n3 = genB(seed1);
+				var b = _n3.a;
+				var seed2 = _n3.b;
+				return _Utils_Tuple2(
+					A2(func, a, b),
+					seed2);
+			});
+	});
+var elm$random$Random$pair = F2(
+	function (genA, genB) {
+		return A3(
+			elm$random$Random$map2,
+			F2(
+				function (a, b) {
+					return _Utils_Tuple2(a, b);
+				}),
+			genA,
+			genB);
+	});
+var author$project$Games$Snake$generateRandomPositionCmd = A2(
+	elm$random$Random$generate,
+	author$project$Games$Snake$RandomPosition,
+	A2(
+		elm$random$Random$pair,
+		author$project$Games$Snake$randomBelow(author$project$Games$Snake$size.a),
+		author$project$Games$Snake$randomBelow(author$project$Games$Snake$size.b)));
 var elm$core$Tuple$mapFirst = F2(
 	function (func, _n0) {
 		var x = _n0.a;
@@ -6162,6 +6170,7 @@ var elm$core$Maybe$withDefault = F2(
 			return _default;
 		}
 	});
+var elm$core$String$toFloat = _String_toFloat;
 var elm_community$list_extra$List$Extra$unconsLast = function (list) {
 	var _n0 = elm$core$List$reverse(list);
 	if (!_n0.b) {
@@ -6198,7 +6207,10 @@ var author$project$Games$Snake$update = F2(
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{snake: newSnake}),
+						{
+							snake: newSnake,
+							speed: isEatingCandy ? (model.speed * model.options.intervalFraction) : model.speed
+						}),
 					isEatingCandy ? author$project$Games$Snake$generateRandomPositionCmd : elm$core$Platform$Cmd$none);
 			case 'KeyPressed':
 				var maybeDirection = msg.a;
@@ -6215,12 +6227,43 @@ var author$project$Games$Snake$update = F2(
 							},
 							maybeDirection)),
 					elm$core$Platform$Cmd$none);
-			default:
+			case 'RandomPosition':
 				var position = msg.a;
 				return A2(elm$core$List$member, position, model.snake) ? _Utils_Tuple2(model, author$project$Games$Snake$generateRandomPositionCmd) : _Utils_Tuple2(
 					_Utils_update(
 						model,
 						{candyPosition: position}),
+					elm$core$Platform$Cmd$none);
+			case 'IntervalFractionChanged':
+				var newFractionString = msg.a;
+				var updateFraction = F2(
+					function (options, newFraction) {
+						return _Utils_update(
+							options,
+							{intervalFraction: newFraction});
+					});
+				var newOptions = A2(
+					elm$core$Maybe$withDefault,
+					model.options,
+					A2(
+						elm$core$Maybe$map,
+						updateFraction(model.options),
+						elm$core$String$toFloat(newFractionString)));
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{options: newOptions}),
+					elm$core$Platform$Cmd$none);
+			default:
+				var newWallsKillSnake = msg.a;
+				var options = model.options;
+				var newOptions = _Utils_update(
+					options,
+					{wallsKillSnake: newWallsKillSnake});
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{options: newOptions}),
 					elm$core$Platform$Cmd$none);
 		}
 	});
@@ -6312,6 +6355,89 @@ var author$project$Main$update = F2(
 						A2(author$project$Games$Snake$update, snakeMsg, model.snakeModel)));
 		}
 	});
+var author$project$Games$Snake$IntervalFractionChanged = function (a) {
+	return {$: 'IntervalFractionChanged', a: a};
+};
+var elm$core$String$fromFloat = _String_fromNumber;
+var elm$html$Html$div = _VirtualDom_node('div');
+var elm$html$Html$input = _VirtualDom_node('input');
+var elm$json$Json$Encode$string = _Json_wrap;
+var elm$html$Html$Attributes$stringProperty = F2(
+	function (key, string) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			elm$json$Json$Encode$string(string));
+	});
+var elm$html$Html$Attributes$max = elm$html$Html$Attributes$stringProperty('max');
+var elm$html$Html$Attributes$min = elm$html$Html$Attributes$stringProperty('min');
+var elm$html$Html$Attributes$name = elm$html$Html$Attributes$stringProperty('name');
+var elm$html$Html$Attributes$step = function (n) {
+	return A2(elm$html$Html$Attributes$stringProperty, 'step', n);
+};
+var elm$html$Html$Attributes$type_ = elm$html$Html$Attributes$stringProperty('type');
+var elm$html$Html$Attributes$value = elm$html$Html$Attributes$stringProperty('value');
+var elm$html$Html$Events$alwaysStop = function (x) {
+	return _Utils_Tuple2(x, true);
+};
+var elm$virtual_dom$VirtualDom$MayStopPropagation = function (a) {
+	return {$: 'MayStopPropagation', a: a};
+};
+var elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
+var elm$html$Html$Events$stopPropagationOn = F2(
+	function (event, decoder) {
+		return A2(
+			elm$virtual_dom$VirtualDom$on,
+			event,
+			elm$virtual_dom$VirtualDom$MayStopPropagation(decoder));
+	});
+var elm$json$Json$Decode$at = F2(
+	function (fields, decoder) {
+		return A3(elm$core$List$foldr, elm$json$Json$Decode$field, decoder, fields);
+	});
+var elm$html$Html$Events$targetValue = A2(
+	elm$json$Json$Decode$at,
+	_List_fromArray(
+		['target', 'value']),
+	elm$json$Json$Decode$string);
+var elm$html$Html$Events$onInput = function (tagger) {
+	return A2(
+		elm$html$Html$Events$stopPropagationOn,
+		'input',
+		A2(
+			elm$json$Json$Decode$map,
+			elm$html$Html$Events$alwaysStop,
+			A2(elm$json$Json$Decode$map, tagger, elm$html$Html$Events$targetValue)));
+};
+var author$project$Games$Snake$viewOptionsPane = function (options) {
+	return A2(
+		elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				elm$html$Html$input,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$type_('number'),
+						elm$html$Html$Attributes$min('0.01'),
+						elm$html$Html$Attributes$max('0.99'),
+						elm$html$Html$Attributes$step('0.01'),
+						elm$html$Html$Attributes$value(
+						elm$core$String$fromFloat(options.intervalFraction)),
+						elm$html$Html$Events$onInput(author$project$Games$Snake$IntervalFractionChanged)
+					]),
+				_List_Nil),
+				A2(
+				elm$html$Html$input,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$type_('radio'),
+						elm$html$Html$Attributes$name('wallsKillSnake')
+					]),
+				_List_Nil)
+			]));
+};
 var author$project$Components$Grid$initializeRow = F2(
 	function (width, initialSquare) {
 		return A2(
@@ -6331,6 +6457,10 @@ var author$project$Components$Grid$initialize = F2(
 			function (_n1) {
 				return A2(author$project$Components$Grid$initializeRow, width, initialSquare);
 			});
+	});
+var author$project$Components$Grid$mapUpdateRow = F4(
+	function (squarePos, newSquare, squareIndex, oldSquare) {
+		return _Utils_eq(squareIndex, squarePos) ? newSquare : oldSquare;
 	});
 var elm$core$Bitwise$shiftLeftBy = _Bitwise_shiftLeftBy;
 var elm$core$Array$tailIndex = function (len) {
@@ -6380,10 +6510,7 @@ var author$project$Components$Grid$updateRow = F4(
 		var squarePos = _n0.b;
 		return _Utils_eq(rowPos, rowIndex) ? A2(
 			elm$core$Array$indexedMap,
-			F2(
-				function (squareIndex, oldSquare) {
-					return _Utils_eq(squareIndex, squarePos) ? newSquare : oldSquare;
-				}),
+			A2(author$project$Components$Grid$mapUpdateRow, squarePos, newSquare),
 			row) : row;
 	});
 var author$project$Components$Grid$updatePosition = F3(
@@ -6417,15 +6544,6 @@ var elm$core$Array$map = F2(
 			startShift,
 			A2(elm$core$Elm$JsArray$map, helper, tree),
 			A2(elm$core$Elm$JsArray$map, func, tail));
-	});
-var elm$html$Html$div = _VirtualDom_node('div');
-var elm$json$Json$Encode$string = _Json_wrap;
-var elm$html$Html$Attributes$stringProperty = F2(
-	function (key, string) {
-		return A2(
-			_VirtualDom_property,
-			key,
-			elm$json$Json$Encode$string(string));
 	});
 var elm$html$Html$Attributes$class = elm$html$Html$Attributes$stringProperty('className');
 var author$project$Components$Grid$viewRow = F2(
@@ -6500,23 +6618,27 @@ var author$project$Games$Snake$viewSquare = function (square) {
 			]),
 		_List_Nil);
 };
+var author$project$Games$Snake$viewSnake = function (model) {
+	return A2(
+		author$project$Components$Grid$viewBoard,
+		author$project$Games$Snake$viewSquare,
+		A3(
+			author$project$Components$Grid$updatePosition,
+			model.candyPosition,
+			author$project$Games$Snake$Candy,
+			A2(
+				author$project$Games$Snake$updateBoardWithSnake,
+				model.snake,
+				A2(author$project$Components$Grid$initialize, author$project$Games$Snake$size, author$project$Games$Snake$Empty))));
+};
 var author$project$Games$Snake$view = function (model) {
 	return A2(
 		elm$html$Html$div,
 		_List_Nil,
 		_List_fromArray(
 			[
-				A2(
-				author$project$Components$Grid$viewBoard,
-				author$project$Games$Snake$viewSquare,
-				A3(
-					author$project$Components$Grid$updatePosition,
-					model.candyPosition,
-					author$project$Games$Snake$Candy,
-					A2(
-						author$project$Games$Snake$updateBoardWithSnake,
-						model.snake,
-						A2(author$project$Components$Grid$initialize, author$project$Games$Snake$size, author$project$Games$Snake$Empty))))
+				author$project$Games$Snake$viewSnake(model),
+				author$project$Games$Snake$viewOptionsPane(model.options)
 			]));
 };
 var elm$html$Html$a = _VirtualDom_node('a');
