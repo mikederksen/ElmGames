@@ -4,7 +4,7 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "watch": "elm-live -p 3002 --start-page=web/application.html src/Main.elm -- --output=web/main.js",
+        "watch": "elm-live src/Main.elm -p 3002 --start-page=application.html --dir=web -- --output=web/main.js",
         "build": "elm make src/Main.elm --output=web/main.js"
     },
     "repository": {
